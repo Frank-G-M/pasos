@@ -1,11 +1,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/printpasos"
-   >
+    android:background="@drawable/printpasos">
 
 
     <TextView
@@ -248,5 +248,11 @@
         </LinearLayout>
 
     </GridLayout>
+
+    <com.github.mikephil.charting.charts.BarChart
+        android:id="@+id/barChartSteps"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginTop="40dp" />
 
 </LinearLayout>
