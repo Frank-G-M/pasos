@@ -2,6 +2,7 @@ package com.example.pasos;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,6 +30,12 @@ public class HistorialActivity extends AppCompatActivity {
         firebaseHelper = new FirebaseHelper();
         initializeViews();
         loadWeeklyData();
+        findViewById(R.id.btnvolver).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getOnBackPressedDispatcher().onBackPressed();
+            }
+        });
     }
 
     private void initializeViews() {
