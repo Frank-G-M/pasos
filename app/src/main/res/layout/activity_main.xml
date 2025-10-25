@@ -10,9 +10,10 @@
 
     <TextView
         android:id="@+id/tvTitle"
-        android:layout_width="291dp"
-        android:layout_height="87dp"
-        android:layout_marginTop="160dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="80dp"
         android:text="Contador de pasos"
         android:textSize="32sp"
         android:textStyle="bold"
@@ -43,17 +44,21 @@
 
     <Button
         android:id="@+id/btnHistorial"
-        android:layout_width="150dp"
-        android:layout_height="42dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
         android:backgroundTint="#FF5722"
         android:contentDescription="Ver historial"
         android:src="@android:drawable/ic_menu_today"
         android:text="historial"
         android:textStyle="bold"
         android:textColor="@android:color/black"
-        tools:ignore="MissingConstraints"
-        tools:layout_editor_absoluteX="130dp"
-        tools:layout_editor_absoluteY="597dp" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintVertical_bias="0.839"
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
