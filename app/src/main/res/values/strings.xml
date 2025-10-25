@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">pasos</string>
+    <string name="lun">Lun</string>
+    <string name="semanario">semanario</string>
+    <string name="los_pasos_dados_son">los pasos dados son</string>
 </resources>
