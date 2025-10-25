@@ -1,92 +1,143 @@
 package com.example.pasos;
-
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, StepDetector.StepListener {
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
+    private StepDetector stepDetector;
+    private FirebaseHelper firebaseHelper;
+
     private TextView txtSteps;
-    private boolean running = false;
-    private int stepCount = 0;
-    private double previousMagnitude = 0;
-    private double threshold = 10;
+    private Button btnHistorial;
+
+    private int currentSteps = 0;
+    private boolean isSensorRegistered = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initializeViews();
+        setupSensor();
+        setupFirebase();
+        loadTodaySteps();
+
+        btnHistorial.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, HistorialActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    private void initializeViews() {
         txtSteps = findViewById(R.id.txtSteps);
-
-        SharedPreferences prefs = getSharedPreferences("Pasos", MODE_PRIVATE);
-        String savedDate = prefs.getString("Step_date","");
-        int savedSteps = prefs.getInt("steps_today",0);
-        if (savedDate.equals(getTodayDate())){
-            stepCount=savedSteps;
-        }else{
-            stepCount=0;
-        }
-        txtSteps.setText("Pasos: " + stepCount);
-
-        sensorManager=(SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        accelerometer=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-
+        btnHistorial = findViewById(R.id.btnHistorial);
     }
+
+    private void setupSensor() {
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        stepDetector = new StepDetector();
+        stepDetector.setStepListener(this);
+    }
+
+    private void setupFirebase() {
+        firebaseHelper = new FirebaseHelper();
+    }
+
+    private void loadTodaySteps() {
+        firebaseHelper.getTodaySteps(new FirebaseHelper.FirestoreCallback() {
+            @Override
+            public void onCallback(int steps) {
+                currentSteps = steps;
+                runOnUiThread(() -> updateStepDisplay());
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(() ->
+                        Toast.makeText(MainActivity.this, "Error cargando datos", Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
+    }
+
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
-        running=true;
-        sensorManager.registerListener(this,accelerometer,SensorManager.SENSOR_DELAY_UI);
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            isSensorRegistered = true;
+        }
     }
+
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
-        SharedPreferences prefs = getSharedPreferences("Pasos",MODE_PRIVATE);
-        prefs.edit()
-                .putInt("steps_today",stepCount)
-                .putString("Step_date",getTodayDate())
-                .apply();
+        if (isSensorRegistered) {
+            sensorManager.unregisterListener(this);
+            isSensorRegistered = false;
+            saveCurrentSteps();
+        }
     }
-    @Override
-    protected void onStop(){
-        super.onStop();
-        SharedPreferences prefs = getSharedPreferences("Pasos",MODE_PRIVATE);
-        prefs.edit().putInt("Step_today",stepCount).apply();
-    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
-        float x = event.values[0];
-        float y = event.values[1];
-        float z = event.values[2];
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
 
-    double magnitude = Math.sqrt(x*x+y*y+z*z);
-    double delta = magnitude - previousMagnitude;
-    previousMagnitude = magnitude;
+            stepDetector.updateAcceleration(x, y, z);
+        }
+    }
 
-    if (delta>threshold){
-        stepCount++;
-        txtSteps.setText("Pasos: "+stepCount);
-    }
-    }
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {}
-    private String getTodayDate() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+
+
+    @Override
+    public void onStep() {
+        currentSteps++;
+        runOnUiThread(this::updateStepDisplay);
+
+        if (currentSteps % 10 == 0) {
+            saveCurrentSteps();
+        }
     }
 
+    private void updateStepDisplay() {
+        txtSteps.setText(String.valueOf(currentSteps));
+    }
+
+    private void saveCurrentSteps() {
+        firebaseHelper.saveDailySteps(currentSteps, new FirebaseHelper.FirestoreCallback() {
+            @Override
+            public void onCallback(int steps) {
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(() ->
+                        Toast.makeText(MainActivity.this, "Error guardando datos", Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        saveCurrentSteps();
+    }
 }
